@@ -1,0 +1,215 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "IoT Device Manager",
+    "version": "2.0.0",
+    "description": "Real-time IoT device management and monitoring system"
+  },
+  "servers": {
+    "production": {
+      "host": "api.iot-devices.com",
+      "protocol": "wss",
+      "port": 443
+    },
+    "development": {
+      "host": "localhost",
+      "protocol": "ws",
+      "port": 8080
+    }
+  },
+  "channels": {
+    "deviceEvents": {
+      "address": "/devices/{deviceId}/events",
+      "messages": {
+        "SensorReading": {
+          "payload": {
+            "$ref": "#/components/schemas/SensorData"
+          }
+        },
+        "DeviceStatus": {
+          "payload": {
+            "$ref": "#/components/schemas/DeviceInfo"
+          }
+        },
+        "Alert": {
+          "payload": {
+            "$ref": "#/components/schemas/AlertMessage"
+          }
+        }
+      },
+      "parameters": {
+        "deviceId": {
+          "description": "Unique device identifier"
+        }
+      }
+    }
+  },
+  "operations": {
+    "publishSensorReading": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/deviceEvents"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/deviceEvents/messages/SensorReading"
+        }
+      ]
+    },
+    "receiveSensorReading": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/deviceEvents"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/deviceEvents/messages/SensorReading"
+        }
+      ]
+    },
+    "publishDeviceStatus": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/deviceEvents"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/deviceEvents/messages/DeviceStatus"
+        }
+      ]
+    },
+    "receiveAlert": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/deviceEvents"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/deviceEvents/messages/Alert"
+        }
+      ]
+    }
+  },
+  "components": {
+    "schemas": {
+      "DeviceType": {
+        "type": "string",
+        "enum": ["sensor", "actuator", "gateway", "controller"],
+        "description": "Type of IoT device"
+      },
+      "AlertLevel": {
+        "type": "string",
+        "enum": ["info", "warning", "error", "critical"],
+        "description": "Alert severity level"
+      },
+      "ConnectionStatus": {
+        "type": "string",
+        "enum": ["online", "offline", "connecting", "error"],
+        "description": "Device connection status"
+      },
+      "SensorData": {
+        "type": "object",
+        "required": ["deviceId", "sensorType", "value", "timestamp"],
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Unique device identifier"
+          },
+          "sensorType": {
+            "type": "string",
+            "description": "Type of sensor (temperature, humidity, etc.)"
+          },
+          "value": {
+            "type": "number",
+            "description": "Sensor reading value"
+          },
+          "unit": {
+            "type": "string",
+            "description": "Unit of measurement"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the reading was taken"
+          },
+          "location": {
+            "type": "string",
+            "description": "Physical location of sensor"
+          }
+        }
+      },
+      "DeviceInfo": {
+        "type": "object",
+        "required": ["deviceId", "deviceType", "status"],
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Unique device identifier"
+          },
+          "deviceType": {
+            "$ref": "#/components/schemas/DeviceType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable device name"
+          },
+          "firmwareVersion": {
+            "type": "string",
+            "description": "Device firmware version"
+          },
+          "batteryLevel": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Battery percentage (0-100)"
+          },
+          "lastSeen": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last communication timestamp"
+          }
+        }
+      },
+      "AlertMessage": {
+        "type": "object",
+        "required": ["id", "deviceId", "level", "message", "timestamp"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique alert identifier"
+          },
+          "deviceId": {
+            "type": "string",
+            "description": "Device that triggered the alert"
+          },
+          "level": {
+            "$ref": "#/components/schemas/AlertLevel"
+          },
+          "message": {
+            "type": "string",
+            "description": "Alert description"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When alert was generated"
+          },
+          "acknowledged": {
+            "type": "boolean",
+            "description": "Whether alert has been acknowledged"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Alert tags for categorization"
+          }
+        }
+      }
+    }
+  }
+}
