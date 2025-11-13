@@ -15,29 +15,32 @@ from pathlib import Path
 
 def to_pascal_case(text: str) -> str:
     """Convert text to PascalCase."""
-    return ''.join(
+    return "".join(
         word.capitalize()
-        for word in text.replace('-', '_').replace(' ', '_').split('_')
+        for word in text.replace("-", "_").replace(" ", "_").split("_")
     )
 
 
 def to_snake_case(text: str) -> str:
     """Convert text to snake_case."""
     import re
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', text)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", text)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
 def to_kebab_case(text: str) -> str:
     """Convert text to kebab-case."""
-    return to_snake_case(text).replace('_', '-')
+    return to_snake_case(text).replace("_", "-")
 
 
-def generate_client(spec_file: str, output_dir: str) -> None:
+def generate_client(
+    spec_file: str, output_dir: str, async_client: bool = False
+) -> None:
     """Generate Python WebSocket client from AsyncAPI specification."""
     # Load AsyncAPI specification
     try:
-        with open(spec_file, 'r', encoding='utf-8') as f:
+        with open(spec_file, "r", encoding="utf-8") as f:
             spec = json.load(f)
     except FileNotFoundError:
         print(f"❌ Error: Specification file '{spec_file}' not found")
@@ -47,61 +50,61 @@ def generate_client(spec_file: str, output_dir: str) -> None:
         sys.exit(1)
 
     # Validate AsyncAPI version
-    api_version = spec.get('asyncapi', '')
-    if not api_version.startswith('3.'):
-        print(f"⚠️  Warning: This generator is optimized for AsyncAPI 3.x, "
-              f"found version {api_version}")
+    api_version = spec.get("asyncapi", "")
+    if not api_version.startswith("3."):
+        print(
+            f"⚠️  Warning: This generator is optimized for AsyncAPI 3.x, "
+            f"found version {api_version}"
+        )
 
     # Extract specification data
-    info = spec.get('info', {})
-    title = info.get('title', 'AsyncAPI Client')
-    description = info.get(
-        'description', 'Generated AsyncAPI WebSocket client'
-    )
-    
+    info = spec.get("info", {})
+    title = info.get("title", "AsyncAPI Client")
+    description = info.get("description", "Generated AsyncAPI WebSocket client")
+
     # Get server information
-    servers = spec.get('servers', {})
+    servers = spec.get("servers", {})
     if servers:
         first_server = list(servers.values())[0]
-        protocol = first_server.get('protocol', 'wss')
-        host = first_server.get('host', 'localhost')
-        port = first_server.get('port')
+        protocol = first_server.get("protocol", "wss")
+        host = first_server.get("host", "localhost")
+        port = first_server.get("port")
         server_url = f"{protocol}://{host}" + (f":{port}" if port else "")
     else:
         server_url = "wss://localhost"
 
     # Get schemas and channels
-    schemas = spec.get('components', {}).get('schemas', {})
-    channels = spec.get('channels', {})
+    schemas = spec.get("components", {}).get("schemas", {})
+    channels = spec.get("channels", {})
 
     # Create output directory
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # Generate client code
     client_content = generate_client_code(
-        title, description, server_url, schemas, channels
+        title, description, server_url, schemas, channels, async_client
     )
-    
+
     # Generate project configuration
-    pyproject_content = generate_pyproject_toml(title, description)
+    pyproject_content = generate_pyproject_toml(title, description, async_client)
     readme_content = generate_readme(title, description, schemas, channels)
     flake8_content = generate_flake8_config()
 
     # Write files
     files = {
-        'client.py': client_content,
-        'pyproject.toml': pyproject_content,
-        'README.md': readme_content,
-        '.flake8': flake8_content,
+        "client.py": client_content,
+        "pyproject.toml": pyproject_content,
+        "README.md": readme_content,
+        ".flake8": flake8_content,
     }
 
     for filename, content in files.items():
         filepath = Path(output_dir) / filename
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
 
     # Print success message
-    client_class_name = to_pascal_case(title.replace(' ', '')) + 'Client'
+    client_class_name = to_pascal_case(title.replace(" ", "")) + "Client"
     print("✅ Successfully generated Python client!")
     print(f"   📁 Output directory: {output_dir}")
     print(f"   🐍 Client class: {client_class_name}")
@@ -114,14 +117,49 @@ def generate_client(spec_file: str, output_dir: str) -> None:
     print("   python client.py")
 
 
-def generate_client_code(title: str, description: str, server_url: str,
-                         schemas: dict, channels: dict) -> str:
+def generate_client_code(
+    title: str,
+    description: str,
+    server_url: str,
+    schemas: dict,
+    channels: dict,
+    async_client: bool = False,
+) -> str:
     """Generate the main client Python code."""
-    
-    client_class_name = to_pascal_case(title.replace(' ', '')) + 'Client'
-    
+
+    client_class_name = to_pascal_case(title.replace(" ", "")) + "Client"
+
     # Start building the client code
-    code = f'''"""
+    if async_client:
+        code = f'''"""
+AsyncAPI Async WebSocket Client for {title}.
+
+{description}
+
+This async client was automatically generated from an AsyncAPI 3.0.0
+specification.
+"""
+import asyncio
+import json
+import ssl
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
+
+try:
+    import certifi
+    import websockets
+except ImportError as e:
+    print("❌ Missing required dependencies. Install with:")
+    print("   pip install websockets certifi")
+    print("   or: poetry install")
+    raise e
+
+
+# Generated Enums
+'''
+    else:
+        code = f'''"""
 AsyncAPI WebSocket Client for {title}.
 
 {description}
@@ -151,38 +189,36 @@ except ImportError as e:
 
     # Generate enums for string schemas with enum values
     for schema_name, schema in schemas.items():
-        if (schema.get('type') == 'string' and
-                'enum' in schema and
-                schema['enum']):
+        if schema.get("type") == "string" and "enum" in schema and schema["enum"]:
 
             enum_class_name = to_pascal_case(schema_name)
-            enum_description = schema.get(
-                'description', f'Enum for {schema_name}'
-            )
-            
+            enum_description = schema.get("description", f"Enum for {schema_name}")
+
             code += f'''
 class {enum_class_name}(Enum):
     """{enum_description}."""
 
 '''
-            for enum_value in schema['enum']:
-                const_name = (enum_value.upper()
-                              .replace('-', '_')
-                              .replace(' ', '_')
-                              .replace('.', '_'))
+            for enum_value in schema["enum"]:
+                const_name = (
+                    enum_value.upper()
+                    .replace("-", "_")
+                    .replace(" ", "_")
+                    .replace(".", "_")
+                )
                 code += f'    {const_name} = "{enum_value}"\n'
 
-    code += '\n\n# Generated Data Classes'
+    code += "\n\n# Generated Data Classes"
 
     # Generate dataclasses for object schemas
     for schema_name, schema in schemas.items():
-        if schema.get('type') == 'object':
-            properties = schema.get('properties', {})
-            required = set(schema.get('required', []))
-            
+        if schema.get("type") == "object":
+            properties = schema.get("properties", {})
+            required = set(schema.get("required", []))
+
             class_name = to_pascal_case(schema_name)
             class_description = schema.get(
-                'description', f'Data class for {schema_name}'
+                "description", f"Data class for {schema_name}"
             )
 
             code += f'''
@@ -196,24 +232,266 @@ class {class_name}:
             for prop_name, prop_schema in properties.items():
                 if prop_name in required:
                     prop_type = get_python_type(prop_schema, schemas)
-                    prop_desc = prop_schema.get('description', '')
-                    code += f'    {prop_name}: {prop_type}'
+                    prop_desc = prop_schema.get("description", "")
+                    code += f"    {prop_name}: {prop_type}"
                     if prop_desc:
-                        code += f'  # {prop_desc}'
-                    code += '\n'
-            
+                        code += f"  # {prop_desc}"
+                    code += "\n"
+
             # Add optional fields with defaults
             for prop_name, prop_schema in properties.items():
                 if prop_name not in required:
                     prop_type = get_python_type(prop_schema, schemas)
-                    prop_desc = prop_schema.get('description', '')
-                    code += f'    {prop_name}: Optional[{prop_type}] = None'
+                    prop_desc = prop_schema.get("description", "")
+                    code += f"    {prop_name}: Optional[{prop_type}] = None"
                     if prop_desc:
-                        code += f'  # {prop_desc}'
-                    code += '\n'
+                        code += f"  # {prop_desc}"
+                    code += "\n"
 
     # Generate main client class
-    code += f'''
+    if async_client:
+        code += f'''
+
+class {client_class_name}:
+    """
+    AsyncAPI Async WebSocket Client for {title}.
+    
+    {description}
+    
+    This async client provides WebSocket connectivity with automatic
+    message routing, type-safe data handling, and comprehensive error
+    management using async/await.
+    """
+
+    def __init__(self, server_url: str = "{server_url}"):
+        """
+        Initialize the async WebSocket client.
+        
+        Args:
+            server_url: WebSocket server URL (default: {server_url})
+        """
+        self.url = server_url
+        self.websocket = None
+        self.message_handlers: Dict[str, List[Callable]] = {{}}
+        self.error_handlers: List[Callable] = []
+        self.connected = False
+        self._reconnect_task = None
+        self._message_task = None
+
+    async def connect(self, auto_reconnect: bool = False) -> bool:
+        """
+        Connect to the WebSocket server asynchronously.
+        
+        Args:
+            auto_reconnect: Whether to automatically reconnect on disconnect
+            
+        Returns:
+            bool: True if connection successful, False otherwise
+        """
+        try:
+            import websockets
+            
+            # Create SSL context with certificate verification
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+
+            # Connect to WebSocket server
+            self.websocket = await websockets.connect(
+                self.url,
+                ssl=ssl_context
+            )
+            self.connected = True
+            print(f"✅ Connected to {{self.url}}")
+
+            # Start message handler task
+            self._message_task = asyncio.create_task(self._handle_messages())
+
+            # Start auto-reconnect task if requested
+            if auto_reconnect:
+                self._reconnect_task = asyncio.create_task(self._auto_reconnect_loop())
+
+            return True
+
+        except Exception as e:
+            print(f"❌ Connection failed: {{e}}")
+            await self._handle_error(e)
+            return False
+
+    async def disconnect(self) -> None:
+        """Disconnect from the WebSocket server."""
+        self.connected = False
+        
+        # Cancel background tasks
+        if self._reconnect_task and not self._reconnect_task.done():
+            self._reconnect_task.cancel()
+        if self._message_task and not self._message_task.done():
+            self._message_task.cancel()
+        
+        # Close WebSocket connection
+        if self.websocket:
+            await self.websocket.close()
+        
+        print(f"🔌 Disconnected from {{self.url}}")
+
+    def is_connected(self) -> bool:
+        """Check if client is currently connected."""
+        return self.connected and self.websocket and not self.websocket.closed
+
+    async def wait_for_disconnect(self) -> None:
+        """Wait until the connection is closed."""
+        if self._message_task:
+            await self._message_task
+
+    async def _handle_messages(self) -> None:
+        """Handle incoming WebSocket messages."""
+        try:
+            async for message in self.websocket:
+                try:
+                    data = json.loads(message)
+                    message_type = data.get("type", "unknown")
+
+                    if message_type in self.message_handlers:
+                        for handler in self.message_handlers[message_type]:
+                            try:
+                                # Support both sync and async handlers
+                                if asyncio.iscoroutinefunction(handler):
+                                    await handler(data)
+                                else:
+                                    handler(data)
+                            except Exception as e:
+                                print(f"❌ Message handler error: {{e}}")
+                                await self._handle_error(e)
+                    else:
+                        print(f"⚠️  No handler for message type: {{message_type}}")
+
+                except json.JSONDecodeError as e:
+                    print(f"❌ Failed to decode message: {{e}}")
+                    print(f"   Raw message: {{message}}")
+
+        except websockets.exceptions.ConnectionClosed:
+            self.connected = False
+            print("🔌 Connection closed by server")
+        except Exception as e:
+            self.connected = False
+            print(f"❌ WebSocket error: {{e}}")
+            await self._handle_error(e)
+
+    async def _auto_reconnect_loop(self) -> None:
+        """Automatic reconnection loop."""
+        while self.connected:
+            try:
+                # Check if connection is still alive
+                if self.websocket and self.websocket.closed:
+                    self.connected = False
+                    print("🔄 Connection lost, attempting to reconnect...")
+                    
+                    # Wait before reconnecting
+                    await asyncio.sleep(5)
+                    
+                    # Attempt reconnection
+                    if await self.connect(auto_reconnect=True):
+                        print("✅ Reconnected successfully")
+                    else:
+                        print("❌ Reconnection failed")
+                        
+                # Check every second
+                await asyncio.sleep(1)
+                
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"❌ Reconnect error: {{e}}")
+                await asyncio.sleep(5)
+
+    async def _handle_error(self, error: Exception) -> None:
+        """Handle errors by calling registered error handlers."""
+        for handler in self.error_handlers:
+            try:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(error)
+                else:
+                    handler(error)
+            except Exception as e:
+                print(f"❌ Error handler failed: {{e}}")
+
+    def register_message_handler(
+        self,
+        message_type: str,
+        handler: Callable[[Dict[str, Any]], None]
+    ) -> None:
+        """
+        Register a handler for specific message types.
+        Handler can be sync or async function.
+        
+        Args:
+            message_type: Type of message to handle
+            handler: Function to call when message is received
+        """
+        if message_type not in self.message_handlers:
+            self.message_handlers[message_type] = []
+        self.message_handlers[message_type].append(handler)
+
+    def register_error_handler(
+        self,
+        handler: Callable[[Exception], None]
+    ) -> None:
+        """
+        Register an error handler.
+        Handler can be sync or async function.
+        
+        Args:
+            handler: Function to call when errors occur
+        """
+        self.error_handlers.append(handler)
+
+    async def send_message(self, data: Dict[str, Any]) -> bool:
+        """
+        Send a message to the server asynchronously.
+        
+        Args:
+            data: Message data to send
+            
+        Returns:
+            bool: True if message sent successfully, False otherwise
+        """
+        if not self.is_connected():
+            print("❌ Cannot send message: Not connected to server")
+            return False
+
+        try:
+            message = json.dumps(data, default=str)
+            await self.websocket.send(message)
+            return True
+        except Exception as e:
+            print(f"❌ Failed to send message: {{e}}")
+            await self._handle_error(e)
+            return False
+
+    async def send_raw_message(self, message: str) -> bool:
+        """
+        Send a raw string message to the server asynchronously.
+        
+        Args:
+            message: Raw message string to send
+            
+        Returns:
+            bool: True if message sent successfully, False otherwise
+        """
+        if not self.is_connected():
+            print("❌ Cannot send message: Not connected to server")
+            return False
+
+        try:
+            await self.websocket.send(message)
+            return True
+        except Exception as e:
+            print(f"❌ Failed to send raw message: {{e}}")
+            await self._handle_error(e)
+            return False
+'''
+    else:
+        code += f'''
 
 class {client_class_name}:
     """
@@ -416,11 +694,43 @@ class {client_class_name}:
 
     # Generate message-specific methods
     for channel_name, channel in channels.items():
-        messages = channel.get('messages', {})
+        messages = channel.get("messages", {})
         for message_name, message_spec in messages.items():
             method_name = to_snake_case(message_name).lower()
+
+            if async_client:
+                code += f'''
+    async def send_{method_name}(self, payload: Dict[str, Any]) -> bool:
+        """
+        Send {message_name} message asynchronously.
+        
+        Args:
+            payload: Message payload data
             
-            code += f'''
+        Returns:
+            bool: True if message sent successfully
+        """
+        message_data = {{
+            "type": "{message_name}",
+            "payload": payload
+        }}
+        return await self.send_message(message_data)
+
+    def on_{method_name}(
+        self, 
+        handler: Callable[[Dict[str, Any]], None]
+    ) -> None:
+        """
+        Register handler for {message_name} messages.
+        Handler can be sync or async function.
+        
+        Args:
+            handler: Function to call when {message_name} is received
+        """
+        self.register_message_handler("{message_name}", handler)
+'''
+            else:
+                code += f'''
     def send_{method_name}(self, payload: Dict[str, Any]) -> bool:
         """
         Send {message_name} message.
@@ -451,7 +761,70 @@ class {client_class_name}:
 '''
 
     # Add example usage
-    code += f'''
+    if async_client:
+        code += f'''
+
+async def main() -> None:
+    """Example async usage of the {title} client."""
+    client = {client_class_name}()
+    
+    print(f"🚀 Starting {{client.__class__.__name__}}...")
+    print(f"   Server URL: {{client.url}}")
+    
+    # Register message handlers
+'''
+
+        # Add example handlers for each message type (async version)
+        for channel_name, channel in channels.items():
+            messages = channel.get("messages", {})
+            for message_name, message_spec in messages.items():
+                method_name = to_snake_case(message_name).lower()
+                code += f'''
+    async def handle_{method_name}(data: Dict[str, Any]) -> None:
+        """Handle {message_name} messages asynchronously."""
+        payload = data.get("payload", {{}})
+        print(f"📨 Received {message_name}: {{payload}}")
+        # Can perform async operations here
+        await asyncio.sleep(0.01)  # Example async operation
+    
+    client.on_{method_name}(handle_{method_name})
+'''
+
+        code += f'''
+    # Register error handler
+    async def handle_error(error: Exception) -> None:
+        """Handle connection errors asynchronously."""
+        print(f"❌ Connection error: {{error}}")
+        # Can perform async operations here
+    
+    client.register_error_handler(handle_error)
+    
+    # Connect to server
+    if await client.connect(auto_reconnect=True):
+        print("✅ Connected! Press Ctrl+C to disconnect.")
+        
+        # Example: Send a message after connection
+        # Uncomment and modify as needed:
+        # await client.send_your_message({{"example": "data"}})
+        
+        try:
+            # Keep client running
+            await client.wait_for_disconnect()
+        except KeyboardInterrupt:
+            print("\\n🛑 Shutting down...")
+            await client.disconnect()
+    else:
+        print("❌ Failed to connect to server")
+        return 1
+    
+    return 0
+
+
+if __name__ == "__main__":
+    exit(asyncio.run(main()))
+'''
+    else:
+        code += f'''
 
 def main() -> None:
     """Example usage of the {title} client."""
@@ -462,13 +835,13 @@ def main() -> None:
     
     # Register message handlers
 '''
-    
-    # Add example handlers for each message type
-    for channel_name, channel in channels.items():
-        messages = channel.get('messages', {})
-        for message_name, message_spec in messages.items():
-            method_name = to_snake_case(message_name).lower()
-            code += f'''
+
+        # Add example handlers for each message type (sync version)
+        for channel_name, channel in channels.items():
+            messages = channel.get("messages", {})
+            for message_name, message_spec in messages.items():
+                method_name = to_snake_case(message_name).lower()
+                code += f'''
     def handle_{method_name}(data: Dict[str, Any]) -> None:
         """Handle {message_name} messages."""
         payload = data.get("payload", {{}})
@@ -477,7 +850,7 @@ def main() -> None:
     client.on_{method_name}(handle_{method_name})
 '''
 
-    code += f'''
+        code += f'''
     # Register error handler
     def handle_error(error: Exception) -> None:
         """Handle connection errors."""
@@ -515,39 +888,48 @@ if __name__ == "__main__":
 
 def get_python_type(schema: dict, all_schemas: dict) -> str:
     """Convert AsyncAPI schema to Python type annotation."""
-    if '$ref' in schema:
+    if "$ref" in schema:
         # Reference to another schema
-        ref_name = schema['$ref'].split('/')[-1]
+        ref_name = schema["$ref"].split("/")[-1]
         return to_pascal_case(ref_name)
-    
-    schema_type = schema.get('type', 'Any')
-    
-    if schema_type == 'string':
-        if 'enum' in schema:
+
+    schema_type = schema.get("type", "Any")
+
+    if schema_type == "string":
+        if "enum" in schema:
             # Enum reference
-            title = schema.get('title', 'UnknownEnum')
+            title = schema.get("title", "UnknownEnum")
             return to_pascal_case(title)
-        return 'str'
-    elif schema_type == 'integer':
-        return 'int'
-    elif schema_type == 'number':
-        return 'float'
-    elif schema_type == 'boolean':
-        return 'bool'
-    elif schema_type == 'array':
-        items_type = get_python_type(schema.get('items', {}), all_schemas)
-        return f'List[{items_type}]'
-    elif schema_type == 'object':
-        return 'Dict[str, Any]'
+        return "str"
+    elif schema_type == "integer":
+        return "int"
+    elif schema_type == "number":
+        return "float"
+    elif schema_type == "boolean":
+        return "bool"
+    elif schema_type == "array":
+        items_type = get_python_type(schema.get("items", {}), all_schemas)
+        return f"List[{items_type}]"
+    elif schema_type == "object":
+        return "Dict[str, Any]"
     else:
-        return 'Any'
+        return "Any"
 
 
-def generate_pyproject_toml(title: str, description: str) -> str:
+def generate_pyproject_toml(
+    title: str, description: str, async_client: bool = False
+) -> str:
     """Generate pyproject.toml configuration."""
-    package_name = to_kebab_case(title.replace(' ', '-')) + '-client'
-    
-    return f'''[build-system]
+    package_name = to_kebab_case(title.replace(" ", "-")) + "-client"
+
+    if async_client:
+        dependencies = ['"websockets>=11.0.0"', '"certifi>=2023.7.22"']
+    else:
+        dependencies = ['"websocket-client>=1.6.0"', '"certifi>=2023.7.22"']
+
+    deps_str = ",\n    ".join(dependencies)
+
+    return f"""[build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
@@ -561,8 +943,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-    "websocket-client>=1.6.0",
-    "certifi>=2023.7.22"
+    {deps_str}
 ]
 
 [project.optional-dependencies]
@@ -597,27 +978,26 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-'''
+"""
 
 
-def generate_readme(title: str, description: str, schemas: dict,
-                    channels: dict) -> str:
+def generate_readme(title: str, description: str, schemas: dict, channels: dict) -> str:
     """Generate README.md documentation."""
-    client_class_name = to_pascal_case(title.replace(' ', '')) + 'Client'
-    
+    client_class_name = to_pascal_case(title.replace(" ", "")) + "Client"
+
     # Generate schema documentation
     schema_docs = ""
     if schemas:
         schema_docs = "### Generated Data Types\n\n"
         for schema_name, schema in schemas.items():
             class_name = to_pascal_case(schema_name)
-            if schema.get('type') == 'string' and 'enum' in schema:
-                enum_values = ', '.join(f'`{v}`' for v in schema['enum'])
+            if schema.get("type") == "string" and "enum" in schema:
+                enum_values = ", ".join(f"`{v}`" for v in schema["enum"])
                 schema_docs += f"- **{class_name}** (Enum): {enum_values}\n"
-            elif schema.get('type') == 'object':
-                properties = schema.get('properties', {})
+            elif schema.get("type") == "object":
+                properties = schema.get("properties", {})
                 if properties:
-                    prop_list = ', '.join(properties.keys())
+                    prop_list = ", ".join(properties.keys())
                     schema_docs += f"- **{class_name}** (Class): {prop_list}\n"
         schema_docs += "\n"
 
@@ -626,7 +1006,7 @@ def generate_readme(title: str, description: str, schemas: dict,
     if channels:
         method_docs = "### Available Methods\n\n"
         for channel_name, channel in channels.items():
-            messages = channel.get('messages', {})
+            messages = channel.get("messages", {})
             for message_name, message_spec in messages.items():
                 method_name = to_snake_case(message_name).lower()
                 method_docs += (
@@ -637,7 +1017,7 @@ def generate_readme(title: str, description: str, schemas: dict,
                 )
         method_docs += "\n"
 
-    return f'''# {title} Python Client
+    return f"""# {title} Python Client
 
 {description}
 
@@ -760,51 +1140,60 @@ if __name__ == "__main__":
 
 This client was automatically generated from an AsyncAPI specification.
 To regenerate with updates, run the generator again with your updated spec.
-'''
+"""
 
 
 def generate_flake8_config() -> str:
     """Generate .flake8 configuration."""
-    return '''[flake8]
+    return """[flake8]
 max-line-length = 88
 extend-ignore = E203, E501, W503
 exclude = .git,__pycache__,build,dist,*.egg
 per-file-ignores = __init__.py:F401
-'''
+"""
 
 
 def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Generate Python WebSocket client from AsyncAPI 3.0.0 specification',
+        description="Generate Python WebSocket client from AsyncAPI 3.0.0 specification",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
+        epilog="""
 Examples:
   python generate_client.py api.json
   python generate_client.py api.json -o my-client
   python generate_client.py api.json --output ./generated-client
+  python generate_client.py api.json --async  # Generate async client
 
 The generator creates a complete Python package with:
-  - WebSocket client class with type safety
+  - WebSocket client class with type safety (sync or async)
   - Modern packaging (pyproject.toml)  
   - Code quality tools (black, isort, flake8)
   - Comprehensive documentation
-        '''
+
+Async vs Sync Clients:
+  --async: Uses websockets library with async/await (recommended)
+  default: Uses websocket-client library with threading
+        """,
     )
-    
+
     parser.add_argument(
-        'spec', 
-        help='Path to AsyncAPI 3.0.0 specification file (JSON or YAML)'
-    )
-    parser.add_argument(
-        '-o', '--output', 
-        default='generated-client',
-        help='Output directory for generated client (default: generated-client)'
+        "spec", help="Path to AsyncAPI 3.0.0 specification file (JSON or YAML)"
     )
     parser.add_argument(
-        '--version', 
-        action='version', 
-        version='AsyncAPI Python Generator 1.0.0'
+        "-o",
+        "--output",
+        default="generated-client",
+        help="Output directory for generated client (default: generated-client)",
+    )
+    parser.add_argument(
+        "--async",
+        action="store_true",
+        dest="async_client",
+        help="Generate async WebSocket client using websockets library",
+    )
+    parser.add_argument(
+        "--version", action="version", version="AsyncAPI Python Generator 1.0.0"
     )
 
     if len(sys.argv) == 1:
@@ -818,15 +1207,16 @@ The generator creates a complete Python package with:
         return 1
 
     try:
-        generate_client(args.spec, args.output)
+        generate_client(args.spec, args.output, args.async_client)
         return 0
     except KeyboardInterrupt:
         print("\n❌ Generation cancelled by user")
         return 1
     except Exception as e:
         print(f"❌ Error generating client: {e}")
-        if os.environ.get('DEBUG'):
+        if os.environ.get("DEBUG"):
             import traceback
+
             traceback.print_exc()
         return 1
 

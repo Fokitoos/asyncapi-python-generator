@@ -1,87 +1,94 @@
 {
-  "asyncapi": "3.0.0",
-  "info": {
-    "title": "Phobos GPIO interface API",
-    "version": "1.0.0",
-    "description": "WebSocket API for bidirectional GPIO messages between client and server"
-  },
-  "servers": {
-    "Phobos": {
-      "host": "127.0.0.1",
-      "protocol": "wss"
-    }
-  },
-  "channels": {
-    "phobosGpioInterfaceV1": {
-      "address": "/v1/{aGpioInterfaceResource}",
-      "messages": {
-        "GpioMessage": {
-          "payload": {
-            "$ref": "#/components/schemas/Gpio"
-          }
-        }
-      },
-      "parameters": {
-        "aGpioInterfaceResource": {
-          "description": "GPIO interface resource identifier"
-        }
-      }
-    }
-  },
-  "operations": {
-    "sendGpioMessage": {
-      "action": "send",
-      "channel": {
-        "$ref": "#/channels/phobosGpioInterfaceV1"
-      },
-      "messages": [
-        {
-          "$ref": "#/channels/phobosGpioInterfaceV1/messages/GpioMessage"
-        }
-      ]
+    "asyncapi": "3.0.0",
+    "info": {
+        "title": "Phobos GPIO interface API",
+        "version": "1.0.0",
+        "description": "WebSocket API for bidirectional GPIO messages between client and server"
     },
-    "receiveGPIOMessage": {
-      "action": "receive",
-      "channel": {
-        "$ref": "#/channels/phobosGpioInterfaceV1"
-      },
-      "messages": [
-        {
-          "$ref": "#/channels/phobosGpioInterfaceV1/messages/GpioMessage"
+    "servers": {
+        "Phobos": {
+            "host": "127.0.0.1",
+            "protocol": "wss"
         }
-      ]
-    }
-  },
-  "components": {
-    "schemas": {
-      "GpioStatus": {
-        "type": "string",
-        "enum": ["high", "low", "unknown"],
-        "description": "GPIO pin status values"
-      },
-      "Gpio": {
-        "type": "object",
-        "required": ["pin", "status"],
-        "properties": {
-          "pin": {
-            "type": "integer",
-            "description": "GPIO pin number"
-          },
-          "status": {
-            "$ref": "#/components/schemas/GpioStatus",
-            "description": "Current GPIO pin status"
-          },
-          "timestamp": {
-            "type": "string",
-            "description": "Timestamp when status was read",
-            "format": "date-time"
-          },
-          "event": {
-            "type": "string",
-            "description": "Event description"
-          }
+    },
+    "channels": {
+        "phobosGpioInterfaceV1": {
+            "address": "/v1/{aGpioInterfaceResource}",
+            "messages": {
+                "GpioMessage": {
+                    "payload": {
+                        "$ref": "#/components/schemas/Gpio"
+                    }
+                }
+            },
+            "parameters": {
+                "aGpioInterfaceResource": {
+                    "description": "GPIO interface resource identifier"
+                }
+            }
         }
-      }
+    },
+    "operations": {
+        "sendGpioMessage": {
+            "action": "send",
+            "channel": {
+                "$ref": "#/channels/phobosGpioInterfaceV1"
+            },
+            "messages": [
+                {
+                    "$ref": "#/channels/phobosGpioInterfaceV1/messages/GpioMessage"
+                }
+            ]
+        },
+        "receiveGPIOMessage": {
+            "action": "receive",
+            "channel": {
+                "$ref": "#/channels/phobosGpioInterfaceV1"
+            },
+            "messages": [
+                {
+                    "$ref": "#/channels/phobosGpioInterfaceV1/messages/GpioMessage"
+                }
+            ]
+        }
+    },
+    "components": {
+        "schemas": {
+            "GpioStatus": {
+                "type": "string",
+                "enum": [
+                    "high",
+                    "low",
+                    "unknown"
+                ],
+                "description": "GPIO pin status values"
+            },
+            "Gpio": {
+                "type": "object",
+                "required": [
+                    "pin",
+                    "status"
+                ],
+                "properties": {
+                    "pin": {
+                        "type": "integer",
+                        "description": "GPIO pin number"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/GpioStatus",
+                        "description": "Current GPIO pin status"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "description": "Timestamp when status was read",
+                        "format": "date-time"
+                    },
+                    "event": {
+                        "type": "string",
+                        "description": "Event description"
+                    }
+                }
+            }
+        }
     }
-  }
 }

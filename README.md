@@ -5,6 +5,8 @@ A dynamic, offline-capable generator for creating Python WebSocket clients from 
 ## ✨ Features
 
 - 🚀 **AsyncAPI 3.0.0 Support** - Full support for the latest AsyncAPI specification
+- ⚡ **Async/Await Support** - Modern async clients with `websockets` library (recommended)
+- 🔄 **Sync Support** - Traditional threaded clients with `websocket-client` library  
 - 🔄 **Dynamic Generation** - Automatically adapts to spec changes (new fields, enums, messages)
 - 📦 **Modern Python Packaging** - Poetry and UV compatible with pyproject.toml
 - 🎯 **Type Safety** - Generated dataclasses and enums for all schemas
@@ -14,6 +16,62 @@ A dynamic, offline-capable generator for creating Python WebSocket clients from 
 - 📝 **Documentation** - Auto-generated README and usage examples
 
 ## 🚀 Quick Start
+
+### Generate Async Client (Recommended)
+
+```bash
+# Generate modern async client using websockets library
+python generate_client.py examples/gpio-api.json --async -o my-async-client
+cd my-async-client
+poetry install  
+python client.py
+```
+
+### Generate Sync Client
+
+```bash
+# Generate traditional sync client using websocket-client library  
+python generate_client.py examples/gpio-api.json -o my-sync-client
+cd my-sync-client
+poetry install
+python client.py
+```
+
+## 🔄 Async vs Sync Clients
+
+| Feature | Async Client (`--async`) | Sync Client (default) |
+|---------|--------------------------|------------------------|
+| **Library** | `websockets>=11.0.0` | `websocket-client>=1.6.0` |
+| **Style** | Modern async/await | Traditional threading |
+| **Performance** | Better for high concurrency | Good for simple use cases |
+| **Error Handling** | Native async error handling | Thread-based error handling |
+| **Recommended For** | New projects, async codebases | Legacy compatibility |
+
+### Example Async Usage
+
+```python
+import asyncio
+from client import YourApiClient
+
+async def main():
+    client = YourApiClient()
+    
+    # Async message handler
+    async def handle_message(data):
+        print(f"Received: {data}")
+        # Can perform async operations
+        await asyncio.sleep(0.1)
+    
+    client.on_your_message(handle_message)
+    
+    # Connect and send
+    if await client.connect():
+        await client.send_your_message({"key": "value"})
+        await client.wait_for_disconnect()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
 
 ### Installation
 
