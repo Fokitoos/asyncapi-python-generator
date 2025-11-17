@@ -4,6 +4,10 @@ AsyncAPI 3.0.0 Python WebSocket Client Generator
 
 Generates complete Python WebSocket clients from AsyncAPI 3.0.0 specifications
 with full type safety, modern packaging, and code quality tools.
+
+For compatibility, you can also run this script directly with:
+  python generate_client.py [args]
+  python3 generate_client.py [args]
 """
 
 import argparse
@@ -1155,10 +1159,11 @@ per-file-ignores = __init__.py:F401
 
 def main() -> int:
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Generate Python WebSocket client from AsyncAPI 3.0.0 specification",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+    try:
+        parser = argparse.ArgumentParser(
+            description="Generate Python WebSocket client from AsyncAPI 3.0.0 specification",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
 Examples:
   python generate_client.py api.json
   python generate_client.py api.json -o my-client
@@ -1175,51 +1180,63 @@ Async vs Sync Clients:
   --async: Uses websockets library with async/await (recommended)
   default: Uses websocket-client library with threading
         """,
-    )
+        )
 
-    parser.add_argument(
-        "spec", help="Path to AsyncAPI 3.0.0 specification file (JSON or YAML)"
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default="generated-client",
-        help="Output directory for generated client (default: generated-client)",
-    )
-    parser.add_argument(
-        "--async",
-        action="store_true",
-        dest="async_client",
-        help="Generate async WebSocket client using websockets library",
-    )
-    parser.add_argument(
-        "--version", action="version", version="AsyncAPI Python Generator 1.0.0"
-    )
+        parser.add_argument(
+            "spec", help="Path to AsyncAPI 3.0.0 specification file (JSON or YAML)"
+        )
+        parser.add_argument(
+            "-o",
+            "--output",
+            default="generated-client",
+            help="Output directory for generated client (default: generated-client)",
+        )
+        parser.add_argument(
+            "--async",
+            action="store_true",
+            dest="async_client",
+            help="Generate async WebSocket client using websockets library",
+        )
+        parser.add_argument(
+            "--version", action="version", version="AsyncAPI Python Generator 1.0.0"
+        )
 
-    if len(sys.argv) == 1:
-        parser.print_help()
-        return 1
+        if len(sys.argv) == 1:
+            parser.print_help()
+            return 1
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
-    if not os.path.exists(args.spec):
-        print(f"❌ Error: Specification file '{args.spec}' not found")
-        return 1
+        if not os.path.exists(args.spec):
+            print(f"❌ Error: Specification file '{args.spec}' not found")
+            return 1
 
-    try:
-        generate_client(args.spec, args.output, args.async_client)
-        return 0
-    except KeyboardInterrupt:
-        print("\n❌ Generation cancelled by user")
-        return 1
+        try:
+            generate_client(args.spec, args.output, args.async_client)
+            return 0
+        except KeyboardInterrupt:
+            print("\n❌ Generation cancelled by user")
+            return 1
+        except Exception as e:
+            print(f"❌ Error generating client: {e}")
+            if os.environ.get("DEBUG"):
+                import traceback
+
+                traceback.print_exc()
+            return 1
+
     except Exception as e:
-        print(f"❌ Error generating client: {e}")
-        if os.environ.get("DEBUG"):
-            import traceback
+        # Catch any issues with argument parsing or setup
+        print(f"❌ Script initialization error: {e}")
+        import traceback
 
-            traceback.print_exc()
+        traceback.print_exc()
         return 1
 
 
 if __name__ == "__main__":
+    # Debug print to verify script is executing
+    if "--debug" in sys.argv:
+        print(f"DEBUG: Script starting with Python {sys.version}")
+        print(f"DEBUG: Arguments: {sys.argv}")
     exit(main())

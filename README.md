@@ -20,32 +20,146 @@ A dynamic, offline-capable generator for creating Python WebSocket clients from 
 ### Generate Async Client (Recommended)
 
 ```bash
-# Generate modern async client using websockets library
+# 1. Generate modern async client using websockets library
 python generate_client.py examples/gpio-api.json --async -o my-async-client
+
+# 2. Install dependencies (REQUIRED)
 cd my-async-client
-poetry install  
+poetry install  # or: pip install -e .
+
+# 3. Run the client
 python client.py
 ```
 
 ### Generate Sync Client
 
 ```bash
-# Generate traditional sync client using websocket-client library  
+# 1. Generate traditional sync client using websocket-client library  
 python generate_client.py examples/gpio-api.json -o my-sync-client
+
+# 2. Install dependencies (REQUIRED)
 cd my-sync-client
-poetry install
+poetry install  # or: pip install -e .
+
+# 3. Run the client
 python client.py
 ```
 
-## 🔄 Async vs Sync Clients
+> **💡 Note:** Always use `python generate_client.py` (not `./generate_client.py`) for maximum compatibility across different systems and Python installations.
+>
+> **⚠️ Important:** Generated clients require WebSocket libraries (`websockets` or `websocket-client`) to be installed before they can run.
 
-| Feature | Async Client (`--async`) | Sync Client (default) |
-|---------|--------------------------|------------------------|
-| **Library** | `websockets>=11.0.0` | `websocket-client>=1.6.0` |
-| **Style** | Modern async/await | Traditional threading |
-| **Performance** | Better for high concurrency | Good for simple use cases |
-| **Error Handling** | Native async error handling | Thread-based error handling |
-| **Recommended For** | New projects, async codebases | Legacy compatibility |
+## 🔧 Installation & Usage
+
+No installation required! Just clone and run:
+
+```bash
+git clone https://github.com/yourusername/asyncapi-python-generator
+cd asyncapi-python-generator
+
+# Test that it works
+python generate_client.py --version
+
+# Generate your first client
+python generate_client.py examples/gpio-api.json
+```
+
+### Common Usage Patterns
+
+```bash
+# Basic generation
+python generate_client.py your-spec.json
+
+# Custom output directory  
+python generate_client.py your-spec.json -o my-client
+
+# Async client (recommended)
+python generate_client.py your-spec.json --async
+
+# Help and version
+python generate_client.py --help
+python generate_client.py --version
+```
+
+## � Dependencies & Installation
+
+### For the Generator
+The generator itself requires only Python 3.8+ with standard library - no additional packages needed.
+
+### For Generated Clients  
+**Generated clients require WebSocket libraries to be installed:**
+
+| Client Type           | Required Dependencies                           |
+| --------------------- | ----------------------------------------------- |
+| **Async** (`--async`) | `websockets>=11.0.0`, `certifi>=2023.7.22`      |
+| **Sync** (default)    | `websocket-client>=1.6.0`, `certifi>=2023.7.22` |
+
+### Installing Client Dependencies
+
+The generated clients include a `pyproject.toml` file for easy dependency management:
+
+```bash
+# After generating a client:
+cd my-generated-client
+
+# Option 1: Poetry (recommended)
+poetry install
+
+# Option 2: Pip with pyproject.toml  
+pip install -e .
+
+# Option 3: Manual installation
+# For async clients:
+pip install websockets>=11.0.0 certifi>=2023.7.22
+
+# For sync clients:
+pip install websocket-client>=1.6.0 certifi>=2023.7.22
+```
+
+### Complete Workflow
+
+```bash
+# 1. Generate client (no dependencies needed for generator)
+python generate_client.py examples/gpio-api.json --async -o my-client
+
+# 2. Install client dependencies
+cd my-client  
+poetry install  # or: pip install -e .
+
+# 3. Run the client
+python client.py
+```
+
+### Poetry Project Integration
+
+For integrating generated clients into existing Poetry projects, see the [Poetry Integration Guide](POETRY_INTEGRATION.md) which covers:
+- Direct client generation into project structure  
+- Dependency management in pyproject.toml
+- Multiple integration approaches
+- Complete examples
+
+Quick example:
+```bash
+# Generate directly into your Poetry project
+python poetry_integration.py your-spec.json src/myproject/clients/api_client.py --async --class-name APIClient
+
+# Add dependencies to your pyproject.toml
+# [project]
+# dependencies = [
+#     "websockets>=11.0.0",  # for async clients
+#     "certifi>=2023.7.22",
+# ]
+```
+
+## �🔄 Async vs Sync Clients
+
+| Feature             | Async Client (`--async`)      | Sync Client (default)       |
+| ------------------- | ----------------------------- | --------------------------- |
+| **Library**         | `websockets>=11.0.0`          | `websocket-client>=1.6.0`   |
+| **Style**           | Modern async/await            | Traditional threading       |
+| **Performance**     | Better for high concurrency   | Good for simple use cases   |
+| **Error Handling**  | Native async error handling   | Thread-based error handling |
+| **Recommended For** | New projects, async codebases | Legacy compatibility        |
 
 ### Example Async Usage
 
@@ -153,14 +267,14 @@ generated-client/
 
 The generator dynamically adapts to your AsyncAPI specification:
 
-| Change Type | Automatic Support |
-|-------------|-------------------|
-| New message types | ✅ Auto-generates send/receive methods |
-| New schema fields | ✅ Updates dataclasses with new fields |
-| New enum values | ✅ Adds enum constants |
-| Field type changes | ✅ Updates type hints |
-| Required/optional changes | ✅ Adjusts field defaults |
-| New servers | ✅ Updates default connection URLs |
+| Change Type               | Automatic Support                     |
+| ------------------------- | ------------------------------------- |
+| New message types         | ✅ Auto-generates send/receive methods |
+| New schema fields         | ✅ Updates dataclasses with new fields |
+| New enum values           | ✅ Adds enum constants                 |
+| Field type changes        | ✅ Updates type hints                  |
+| Required/optional changes | ✅ Adjusts field defaults              |
+| New servers               | ✅ Updates default connection URLs     |
 
 ## 📖 Usage Examples
 
